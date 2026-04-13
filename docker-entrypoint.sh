@@ -3,7 +3,7 @@
 # when a Docker volume is mounted at /app/data as root.
 if [ "$(id -u)" = "0" ]; then
   chown app:app /app/data
-  exec su -s /bin/sh app -- node server.js
+  exec su -s /bin/sh app -c "exec /usr/local/bin/node server.js"
 else
   exec node server.js
 fi
