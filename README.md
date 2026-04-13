@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Book of Us
 
-## Getting Started
+A shared bucket list for couples — pinned to a map, sorted by season, checked against the forecast.
 
-First, run the development server:
+I built this for my girlfriend and me. We kept saying "we should do that someday" and then forgetting about it, so I made a little web app where we can collect all those ideas in one place. It's designed around a newspaper/almanac aesthetic that felt right for a list of adventures.
+
+You're welcome to self-host it for yourself.
+
+## What it does
+
+- **Households** — Create a private space and invite your partner with a short code. No accounts, no email, no passwords.
+- **Bucket list items** — Add things you want to do with a title, notes, location, tags, season preferences, weather conditions, and a priority (hearts).
+- **Map view** — Everything is pinned on a Leaflet map so you can see what's nearby.
+- **Recommendations** — Suggests items based on current season, weather, and proximity.
+- **Zero external dependencies** — Data lives in a local SQLite file. No cloud services, no analytics, no tracking.
+
+## Stack
+
+- [Next.js](https://nextjs.org) 16 (App Router, server actions)
+- [SQLite](https://www.sqlite.org) via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+- [Leaflet](https://leafletjs.com) + [React Leaflet](https://react-leaflet.js.org) for maps
+- [Tailwind CSS](https://tailwindcss.com) v4
+
+## Running locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [localhost:3000](http://localhost:3000). The database is created automatically on first request.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To seed some demo data:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm seed
+```
 
-## Learn More
+## Self-hosting with Docker
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker build -t bucket-list .
+docker run -p 3000:3000 -v bucket-list-data:/app/data bucket-list
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The SQLite database is stored in `/app/data/`. Mount a volume there so it persists across restarts.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+You can also set `DB_PATH` to a custom location:
 
-## Deploy on Vercel
+```bash
+docker run -e DB_PATH=/data/my.db -v my-vol:/data -p 3000:3000 bucket-list
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Docker Compose
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```yaml
+services:
+  bucket-list:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_PATH=/app/data/bucket-list.db
+    volumes:
+      - bucket-list-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  bucket-list-data:
+```
+
+## License
+
+Do whatever you want with it. No warranty, no support obligations.
