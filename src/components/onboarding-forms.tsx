@@ -1,13 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
 import { createHouseholdAction, joinHouseholdAction } from "@/lib/actions";
 
 export function OnboardingForms() {
   return (
     <>
-      <CreateCard />
-      <JoinCard />
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+      >
+        <CreateCard />
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
+      >
+        <JoinCard />
+      </motion.div>
     </>
   );
 }

@@ -168,6 +168,49 @@ export async function toggleItemDoneAction(id: string) {
   return { ok: true };
 }
 
+export async function updateItemAction(id: string, input: ItemInput) {
+  const ctx = await getSessionContext();
+  if (!ctx) return { error: "Not signed in" };
+
+  const row = db()
+    .prepare("SELECT * FROM items WHERE id = ? AND household_id = ?")
+    .get(id, ctx.household.id) as ItemRow | undefined;
+  if (!row) return { error: "Not found" };
+
+  const parsed = ItemSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const data = parsed.data;
+
+  db()
+    .prepare(
+      `UPDATE items SET
+        title = ?, notes = ?, lat = ?, lng = ?, address = ?,
+        seasons = ?, tags = ?, weather = ?, indoor = ?, priority = ?,
+        image_url = ?, updated_at = ?
+      WHERE id = ?`,
+    )
+    .run(
+      data.title,
+      data.notes ?? null,
+      data.lat ?? null,
+      data.lng ?? null,
+      data.address ?? null,
+      JSON.stringify(data.seasons),
+      JSON.stringify(data.tags),
+      JSON.stringify(data.weather),
+      data.indoor ? 1 : 0,
+      data.priority,
+      data.imageUrl && data.imageUrl.length > 0 ? data.imageUrl : null,
+      Date.now(),
+      id,
+    );
+
+  revalidatePath("/app");
+  return { ok: true };
+}
+
 export async function deleteItemAction(id: string) {
   const ctx = await getSessionContext();
   if (!ctx) return { error: "Not signed in" };

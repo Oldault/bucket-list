@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MapPin, Search, X } from "lucide-react";
-import { createItemAction } from "@/lib/actions";
-import { SEASONS, WEATHER_TAGS, type Season, type WeatherTag } from "@/lib/types";
+import { createItemAction, updateItemAction } from "@/lib/actions";
+import { SEASONS, WEATHER_TAGS, type Season, type WeatherTag, type Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LocationPicker = dynamic(
@@ -32,22 +32,25 @@ const WEATHER_LABELS: Record<WeatherTag, string> = {
   any: "any weather",
 };
 
-export function AddItemForm({ onDone }: { onDone: () => void }) {
+export function AddItemForm({ onDone, item }: { onDone: () => void; item?: Item }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const isEdit = !!item;
 
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [weather, setWeather] = useState<WeatherTag[]>([]);
-  const [indoor, setIndoor] = useState(false);
-  const [priority, setPriority] = useState(2);
-  const [tags, setTags] = useState<string[]>([]);
+  const [title, setTitle] = useState(item?.title ?? "");
+  const [notes, setNotes] = useState(item?.notes ?? "");
+  const [seasons, setSeasons] = useState<Season[]>(item?.seasons ?? []);
+  const [weather, setWeather] = useState<WeatherTag[]>(item?.weather ?? []);
+  const [indoor, setIndoor] = useState(item?.indoor ?? false);
+  const [priority, setPriority] = useState(item?.priority ?? 2);
+  const [tags, setTags] = useState<string[]>(item?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState(item?.image_url ?? "");
 
-  const [address, setAddress] = useState<string | null>(null);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [address, setAddress] = useState<string | null>(item?.address ?? null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    item?.lat != null && item?.lng != null ? { lat: item.lat, lng: item.lng } : null,
+  );
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<GeocodeHit[]>([]);
@@ -80,7 +83,7 @@ export function AddItemForm({ onDone }: { onDone: () => void }) {
       return;
     }
     start(async () => {
-      const res = await createItemAction({
+      const payload = {
         title: title.trim(),
         notes: notes.trim() || null,
         lat: coords?.lat ?? null,
@@ -92,7 +95,10 @@ export function AddItemForm({ onDone }: { onDone: () => void }) {
         indoor,
         priority,
         imageUrl: imageUrl.trim() || null,
-      });
+      };
+      const res = isEdit
+        ? await updateItemAction(item.id, payload)
+        : await createItemAction(payload);
       if (res && "error" in res && res.error) {
         setError(res.error);
         return;
@@ -277,7 +283,7 @@ export function AddItemForm({ onDone }: { onDone: () => void }) {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-6">
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
             <div className="smallcaps">excitement</div>
             <div className="mt-2 flex gap-2">
@@ -319,7 +325,7 @@ export function AddItemForm({ onDone }: { onDone: () => void }) {
           close the page
         </button>
         <button type="button" onClick={submit} disabled={pending} className="btn-wax">
-          {pending ? "pressing ink…" : "add to the book"}
+          {pending ? "pressing ink…" : isEdit ? "save changes" : "add to the book"}
           <span aria-hidden>→</span>
         </button>
       </div>

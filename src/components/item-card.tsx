@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, MoreVertical, Trash2, Undo2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { Check, MapPin, MoreVertical, Pencil, Trash2, Undo2 } from "lucide-react";
 import type { Item } from "@/lib/types";
 import { deleteItemAction, toggleItemDoneAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import { AddItemDialog } from "./add-item-dialog";
 
 const SEASON_LABEL: Record<string, string> = {
   spring: "in spring",
@@ -18,6 +20,7 @@ export function ItemCard({ item, index }: { item: Item; index?: number }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   function toggle() {
     start(async () => {
@@ -65,27 +68,45 @@ export function ItemCard({ item, index }: { item: Item; index?: number }) {
           >
             <MoreVertical className="size-4" />
           </button>
-          {menuOpen && (
-            <>
-              <button
-                className="fixed inset-0 z-10 cursor-default"
-                onClick={() => setMenuOpen(false)}
-                aria-label="close"
-              />
-              <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-[2px] border border-[var(--border)] bg-[var(--card)] shadow-lg">
+          <AnimatePresence>
+            {menuOpen && (
+              <>
                 <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    remove();
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm italic text-[var(--rose)] hover:bg-[var(--paper-deep)]"
+                  className="fixed inset-0 z-10 cursor-default"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="close"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full z-20 mt-1 w-44 origin-top-right overflow-hidden rounded-[2px] border border-[var(--border)] bg-[var(--card)] shadow-lg"
                 >
-                  <Trash2 className="size-4" />
-                  delete
-                </button>
-              </div>
-            </>
-          )}
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setEditOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm italic text-[var(--foreground)] hover:bg-[var(--paper-deep)]"
+                  >
+                    <Pencil className="size-4" />
+                    edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      remove();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm italic text-[var(--rose)] hover:bg-[var(--paper-deep)]"
+                  >
+                    <Trash2 className="size-4" />
+                    delete
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -177,6 +198,7 @@ export function ItemCard({ item, index }: { item: Item; index?: number }) {
           </button>
         </div>
       </div>
+      <AddItemDialog open={editOpen} onOpenChange={setEditOpen} item={item} />
     </article>
   );
 }

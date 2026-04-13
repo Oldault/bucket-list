@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { ClipboardCopy, LogOut, Plus } from "lucide-react";
 import type { Item } from "@/lib/types";
 import { signOutAction } from "@/lib/actions";
@@ -30,11 +31,11 @@ export type HouseholdSummary = {
 
 type Tab = "ideas" | "map" | "forus" | "done";
 
-const TABS: { id: Tab; label: string; roman: string }[] = [
-  { id: "ideas", label: "Ideas", roman: "I" },
-  { id: "map", label: "The map", roman: "II" },
-  { id: "forus", label: "For us", roman: "III" },
-  { id: "done", label: "Lived", roman: "IV" },
+const TABS: { id: Tab; label: string; mobileLabel: string; roman: string }[] = [
+  { id: "ideas", label: "Ideas", mobileLabel: "Ideas", roman: "I" },
+  { id: "map", label: "The map", mobileLabel: "Map", roman: "II" },
+  { id: "forus", label: "For us", mobileLabel: "For us", roman: "III" },
+  { id: "done", label: "Lived", mobileLabel: "Lived", roman: "IV" },
 ];
 
 export function AppShell({
@@ -70,12 +71,22 @@ export function AppShell({
         {/* section masthead */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="eyebrow">the journal · {tab === "ideas" ? "open pages" : tab === "map" ? "the chart" : tab === "forus" ? "today's almanac" : "the archive"}</div>
-            <h1 className="font-display mt-2 text-5xl leading-[0.9] sm:text-6xl">
-              {heading.label}{" "}
-              <span className="italic">{heading.italic}</span>
-              <span className="text-[var(--primary)]">.</span>
-            </h1>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="eyebrow">the journal · {tab === "ideas" ? "open pages" : tab === "map" ? "the chart" : tab === "forus" ? "today's almanac" : "the archive"}</div>
+                <h1 className="font-display mt-2 text-5xl leading-[0.9] sm:text-6xl">
+                  {heading.label}{" "}
+                  <span className="italic">{heading.italic}</span>
+                  <span className="text-[var(--primary)]">.</span>
+                </h1>
+              </motion.div>
+            </AnimatePresence>
           </div>
           <div className="hidden items-center gap-5 sm:flex">
             <div className="text-right">
@@ -96,27 +107,37 @@ export function AppShell({
 
         <Tabs current={tab} onChange={setTab} />
 
-        <div className="mt-10">
-          {tab === "ideas" && (
-            <ItemGrid
-              items={notDone}
-              emptyLabel="Nothing here yet. Add your first idea."
-            />
-          )}
-          {tab === "done" && (
-            <ItemGrid
-              items={done}
-              emptyLabel="Nothing completed yet. Go do something."
-            />
-          )}
-          {tab === "map" && (
-            <MapView
-              items={items.filter((i) => i.lat != null && i.lng != null)}
-              homeLat={household.homeLat}
-              homeLng={household.homeLng}
-            />
-          )}
-          {tab === "forus" && <Recommendations items={notDone} household={household} />}
+        <div className="relative mt-10">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
+            >
+              {tab === "ideas" && (
+                <ItemGrid
+                  items={notDone}
+                  emptyLabel="Nothing here yet. Add your first idea."
+                />
+              )}
+              {tab === "done" && (
+                <ItemGrid
+                  items={done}
+                  emptyLabel="Nothing completed yet. Go do something."
+                />
+              )}
+              {tab === "map" && (
+                <MapView
+                  items={items.filter((i) => i.lat != null && i.lng != null)}
+                  homeLat={household.homeLat}
+                  homeLng={household.homeLng}
+                />
+              )}
+              {tab === "forus" && <Recommendations items={notDone} household={household} />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
@@ -171,12 +192,24 @@ function Header({
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
-            className="group inline-flex items-center gap-2 rounded-[2px] border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-3 py-2 text-[var(--ink-soft)] hover:border-[var(--primary)]"
+            className="group inline-flex items-center gap-2 rounded-[2px] border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-2 py-2 text-[var(--ink-soft)] hover:border-[var(--primary)] sm:px-3"
             title="Copy invitation code"
           >
             <ClipboardCopy className="size-3.5 opacity-60 group-hover:opacity-100" />
-            <span className="num-mono text-sm tracking-[0.28em]">{household.inviteCode}</span>
-            {copied && <span className="eyebrow">copied ✓</span>}
+            <span className="num-mono hidden text-sm tracking-[0.28em] sm:inline">{household.inviteCode}</span>
+            <AnimatePresence>
+              {copied && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.15 }}
+                  className="eyebrow"
+                >
+                  copied
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
 
           <form action={() => startSignOut(() => signOutAction())}>
@@ -202,44 +235,58 @@ function Tabs({
   onChange: (t: Tab) => void;
 }) {
   return (
-    <nav className="mt-10 border-y border-[var(--rule)]">
-      <ul className="flex flex-wrap items-stretch gap-x-8">
-        {TABS.map((t) => {
-          const active = current === t.id;
-          return (
-            <li key={t.id} className="relative">
-              <button
-                onClick={() => onChange(t.id)}
-                className={cn(
-                  "flex items-baseline gap-2 py-4 font-display text-lg transition",
-                  active
-                    ? "text-[var(--primary)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+    <LayoutGroup>
+      <nav className="mt-10 border-y border-[var(--rule)]">
+        <ul className="flex items-stretch">
+          {TABS.map((t) => {
+            const active = current === t.id;
+            return (
+              <li key={t.id} className="relative flex-1 sm:flex-none">
+                <button
+                  onClick={() => onChange(t.id)}
+                  className={cn(
+                    "flex w-full items-baseline justify-center gap-1.5 whitespace-nowrap py-3 font-display text-[15px] transition-colors sm:w-auto sm:justify-start sm:gap-2 sm:py-4 sm:pr-8 sm:text-lg",
+                    active
+                      ? "text-[var(--primary)]"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                  )}
+                >
+                  <span className="num-mono hidden text-xs opacity-70 sm:inline">{t.roman}.</span>
+                  <span className={active ? "italic" : ""}>
+                    <span className="sm:hidden">{t.mobileLabel}</span>
+                    <span className="hidden sm:inline">{t.label}</span>
+                  </span>
+                </button>
+                {active && (
+                  <motion.span
+                    layoutId="tab-underline"
+                    className="absolute inset-x-0 -bottom-px h-[2px] bg-[var(--primary)]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
                 )}
-              >
-                <span className="num-mono text-xs opacity-70">{t.roman}.</span>
-                <span className={active ? "italic" : ""}>{t.label}</span>
-              </button>
-              {active && (
-                <span className="absolute inset-x-0 -bottom-px h-[2px] bg-[var(--primary)]" />
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </LayoutGroup>
   );
 }
 
 function AddButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
       className="btn-wax fixed bottom-6 right-6 z-40 !px-6 !py-4"
+      initial={{ opacity: 0, scale: 0.8, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ scale: 1.05, rotate: -1 }}
+      whileTap={{ scale: 0.95 }}
       style={{ animation: "slowDrift 7s ease-in-out infinite" }}
     >
       <Plus className="size-4" strokeWidth={2.4} />
-      <span className="italic">pen a new idea</span>
-    </button>
+      <span className="hidden italic sm:inline">pen a new idea</span>
+    </motion.button>
   );
 }

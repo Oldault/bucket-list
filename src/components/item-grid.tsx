@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Search } from "lucide-react";
 import type { Item } from "@/lib/types";
 import { ItemCard } from "./item-card";
@@ -38,11 +39,16 @@ export function ItemGrid({
 
   if (items.length === 0) {
     return (
-      <div className="border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-10 py-20 text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-10 py-20 text-center"
+      >
         <p className="font-display text-2xl italic text-[var(--muted-foreground)]">
           {emptyLabel}
         </p>
-      </div>
+      </motion.div>
     );
   }
 
@@ -79,19 +85,40 @@ export function ItemGrid({
         )}
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-8 py-10 text-center font-display text-xl italic text-[var(--muted-foreground)]">
-          nothing here — yet.
-        </p>
-      ) : (
-        <ul className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((i, idx) => (
-            <li key={i.id} className="rise-in">
-              <ItemCard item={i} index={idx} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <AnimatePresence mode="popLayout">
+        {filtered.length === 0 ? (
+          <motion.p
+            key="empty"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            className="border border-dashed border-[var(--rule)] bg-[var(--paper-warm)] px-8 py-10 text-center font-display text-xl italic text-[var(--muted-foreground)]"
+          >
+            nothing here — yet.
+          </motion.p>
+        ) : (
+          <ul className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((i, idx) => (
+                <motion.li
+                  key={i.id}
+                  layout
+                  initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.2 } }}
+                  transition={{
+                    duration: 0.35,
+                    delay: idx * 0.04,
+                    ease: [0.2, 0.8, 0.2, 1],
+                  }}
+                >
+                  <ItemCard item={i} index={idx} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

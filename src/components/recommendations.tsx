@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { MapPin } from "lucide-react";
 import type { Item } from "@/lib/types";
 import type { Forecast, DayPart } from "@/lib/weather";
@@ -11,6 +12,7 @@ import { weatherEmoji, weatherLabel } from "@/lib/weather";
 import { setHomeLocationAction } from "@/lib/actions";
 import { ItemCard } from "./item-card";
 import { Ornament } from "./ornament";
+import { cn } from "@/lib/utils";
 import type { HouseholdSummary } from "./app-shell";
 
 export function Recommendations({
@@ -103,7 +105,7 @@ export function Recommendations({
           <div className="eyebrow">the weather almanac</div>
         </div>
 
-        <div className="grid gap-0 px-6 py-10 sm:grid-cols-[1fr_auto_1fr] sm:px-10">
+        <div className="grid gap-0 px-5 py-8 sm:grid-cols-[1fr_auto_1fr] sm:px-10 sm:py-10">
           {/* left: date + prose */}
           <div className="sm:pr-8">
             <div className="smallcaps">this day</div>
@@ -115,35 +117,44 @@ export function Recommendations({
           </div>
 
           {/* center: big weather */}
-          <div className="flex flex-col items-center justify-center border-y border-[var(--rule)] py-8 sm:border-x sm:border-y-0 sm:px-12 sm:py-0">
+          <div className="mt-6 flex flex-col items-center justify-center border-y border-[var(--rule)] py-8 sm:mt-0 sm:border-x sm:border-y-0 sm:px-12 sm:py-0">
             {today ? (
-              <>
-                <div className="text-7xl">{weatherEmoji(today.weatherCode)}</div>
-                <div className="font-display mt-3 text-3xl italic leading-none">
-                  {weatherLabel(today.weatherCode).toLowerCase()}
-                </div>
-                <div className="num-mono mt-3 text-lg text-[var(--ink-soft)]">
-                  {Math.round(today.tempMin)}° — {Math.round(today.tempMax)}°
-                </div>
-                {(today.morning || today.afternoon) && (
-                  <div className="mt-4 flex gap-5">
-                    {today.morning && (
-                      <div className="flex flex-col items-center">
-                        <span className="smallcaps !text-[10px]">morning</span>
-                        <span className="mt-1 text-2xl">{weatherEmoji(today.morning.weatherCode)}</span>
-                        <span className="num-mono text-xs text-[var(--ink-soft)]">{today.morning.temp}°</span>
-                      </div>
-                    )}
-                    {today.afternoon && (
-                      <div className="flex flex-col items-center">
-                        <span className="smallcaps !text-[10px]">afternoon</span>
-                        <span className="mt-1 text-2xl">{weatherEmoji(today.afternoon.weatherCode)}</span>
-                        <span className="num-mono text-xs text-[var(--ink-soft)]">{today.afternoon.temp}°</span>
-                      </div>
-                    )}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={dayIndex}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="text-7xl">{weatherEmoji(today.weatherCode)}</div>
+                  <div className="font-display mt-3 text-3xl italic leading-none">
+                    {weatherLabel(today.weatherCode).toLowerCase()}
                   </div>
-                )}
-              </>
+                  <div className="num-mono mt-3 text-lg text-[var(--ink-soft)]">
+                    {Math.round(today.tempMin)}° — {Math.round(today.tempMax)}°
+                  </div>
+                  {(today.morning || today.afternoon) && (
+                    <div className="mt-4 flex gap-5">
+                      {today.morning && (
+                        <div className="flex flex-col items-center">
+                          <span className="smallcaps !text-[10px]">morning</span>
+                          <span className="mt-1 text-2xl">{weatherEmoji(today.morning.weatherCode)}</span>
+                          <span className="num-mono text-xs text-[var(--ink-soft)]">{today.morning.temp}°</span>
+                        </div>
+                      )}
+                      {today.afternoon && (
+                        <div className="flex flex-col items-center">
+                          <span className="smallcaps !text-[10px]">afternoon</span>
+                          <span className="mt-1 text-2xl">{weatherEmoji(today.afternoon.weatherCode)}</span>
+                          <span className="num-mono text-xs text-[var(--ink-soft)]">{today.afternoon.temp}°</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             ) : loading ? (
               <div className="font-display text-3xl italic text-[var(--muted-foreground)]">
                 loading forecast…
@@ -167,7 +178,7 @@ export function Recommendations({
           </div>
 
           {/* right: what it means */}
-          <div className="pt-6 sm:pl-8 sm:pt-0">
+          <div className="mt-6 sm:mt-0 sm:pl-8">
             <div className="smallcaps">what it suggests</div>
             <p className="mt-2 font-display text-xl leading-snug italic">
               {today
@@ -178,32 +189,35 @@ export function Recommendations({
         </div>
 
         {forecast && forecast.length > 1 && (
-          <div className="border-t border-[var(--rule)] px-4 py-3">
-            <div className="flex gap-1 overflow-x-auto">
+          <div className="border-t border-[var(--rule)] px-2 py-3 sm:px-4">
+            <div className="grid grid-cols-7 gap-0.5 overflow-hidden sm:flex sm:gap-1">
               {forecast.slice(0, 7).map((f, i) => {
                 const active = i === dayIndex;
                 return (
                   <button
                     key={f.date}
                     onClick={() => setDayIndex(i)}
-                    className={
-                      "flex min-w-[96px] flex-col items-center border px-3 py-2 transition " +
-                      (active
+                    className={cn(
+                      "flex flex-col items-center border px-1 py-2 transition sm:min-w-[96px] sm:px-3",
+                      active
                         ? "border-[var(--primary)] bg-[var(--paper-deep)]"
-                        : "border-transparent hover:border-[var(--rule)]")
-                    }
+                        : "border-transparent hover:border-[var(--rule)]",
+                    )}
                     style={{ borderRadius: 2 }}
                   >
-                    <span className={
-                      "smallcaps !text-[10px] " +
-                      (active ? "!text-[var(--primary)]" : "")
-                    }>{dayLabel(i)}</span>
-                    <div className="mt-1 flex items-center gap-1">
-                      <DayPartIcon part={f.morning} fallbackCode={f.weatherCode} size="text-base" />
-                      <span className="text-[10px] text-[var(--muted-foreground)]">/</span>
-                      <DayPartIcon part={f.afternoon} fallbackCode={f.weatherCode} size="text-base" />
+                    <span className={cn(
+                      "smallcaps !text-[9px] sm:!text-[10px]",
+                      active && "!text-[var(--primary)]",
+                    )}>
+                      <span className="sm:hidden">{dayLabel(i, true)}</span>
+                      <span className="hidden sm:inline">{dayLabel(i)}</span>
+                    </span>
+                    <div className="mt-0.5 flex items-center gap-0.5 sm:mt-1 sm:gap-1">
+                      <DayPartIcon part={f.morning} fallbackCode={f.weatherCode} size="text-xs sm:text-base" />
+                      <span className="text-[8px] text-[var(--muted-foreground)] sm:text-[10px]">/</span>
+                      <DayPartIcon part={f.afternoon} fallbackCode={f.weatherCode} size="text-xs sm:text-base" />
                     </div>
-                    <div className="num-mono mt-0.5 flex gap-1 text-[11px]">
+                    <div className="num-mono mt-0.5 flex gap-0.5 text-[9px] sm:gap-1 sm:text-[11px]">
                       <span>{Math.round(f.tempMin)}°</span>
                       <span className="text-[var(--muted-foreground)]">/</span>
                       <span>{Math.round(f.tempMax)}°</span>
@@ -231,16 +245,30 @@ export function Recommendations({
           </div>
 
           <ul className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {top.map(({ item, reasons }, i) => (
-              <li key={item.id} className="rise-in space-y-2">
-                <ItemCard item={item} index={i} />
-                {reasons.length > 0 && (
-                  <p className="px-2 font-display text-sm italic text-[var(--accent-deep)]">
-                    ✧ {reasons.join(" · ")}
-                  </p>
-                )}
-              </li>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {top.map(({ item, reasons }, i) => (
+                <motion.li
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{
+                    duration: 0.35,
+                    delay: i * 0.05,
+                    ease: [0.2, 0.8, 0.2, 1],
+                  }}
+                  className="space-y-2"
+                >
+                  <ItemCard item={item} index={i} />
+                  {reasons.length > 0 && (
+                    <p className="px-2 font-display text-sm italic text-[var(--accent-deep)]">
+                      ✧ {reasons.join(" · ")}
+                    </p>
+                  )}
+                </motion.li>
+              ))}
+            </AnimatePresence>
           </ul>
         </div>
       )}
@@ -272,9 +300,9 @@ function DayPartIcon({
   return <span className={size}>{weatherEmoji(code)}</span>;
 }
 
-function dayLabel(i: number) {
-  if (i === 0) return "today";
-  if (i === 1) return "tomorrow";
+function dayLabel(i: number, short = false) {
+  if (i === 0) return short ? "tod." : "today";
+  if (i === 1) return short ? "tom." : "tomorrow";
   const d = new Date();
   d.setDate(d.getDate() + i);
   return d.toLocaleDateString(undefined, { weekday: "short" }).toLowerCase();
